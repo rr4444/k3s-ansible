@@ -157,3 +157,23 @@
     - "{{ k3s_server_manifests_directories.files }}"
   loop_control:
     label: "{{ item.path }}"
+
+- name: Apply kube-vip config
+  command: >-
+    k3s kubectl apply -f <<EOF
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: kubevip
+      namespace: kube-system
+    data:
+      cidr-default: 172.16.4.200/29                      # CIDR-based IP range for use in the default Namespace
+      range-development: 172.16.4.210-172.16.4.219      # Range-based IP range for use in the development Namespace
+      cidr-staging: 172.16.4.220/29,172.16.4.230/29     # Multiple CIDR-based ranges for use in the finance Namespace
+      cidr-global: 172.16.4.240/29                       # CIDR-based range which can be used in any Namespace
+    EOF
+  register: this
+  changed_when: false
+  run_once: true
+  until: this.rc == 0
+  retries: 5
